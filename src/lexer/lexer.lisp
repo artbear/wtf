@@ -113,7 +113,7 @@
         (loop :for ch := (peek-c )
            :while (and ch (or (null ch) (funcall pred ch)))
            :do (princ (next-c )))))
-q
+
     (defun read-until (pred )
       (with-output-to-string (*standard-output*)
         (loop :for ch := (peek-c )

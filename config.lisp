@@ -3,8 +3,11 @@
   (:export *base-dir*
            *log-dir*
            *rule-dir*
+           *report-dir*
            *debug-log*
-           create-and-clear-direcory)
+           build-dir
+           create-and-clear-direcory
+           create-direcory )
 )
 
 (in-package :config.wtf)
@@ -13,16 +16,29 @@
 
 
 
+(defun build-dir (base dir-list)
+  (let ((filename (format nil "~a" base)))
+    (dolist (dir dir-list)
+      (setf filename (config.wtf:create-direcory filename dir)))
+    (pathname-directory (cl-fad:pathname-as-directory filename))))
+
+
 (defun create-and-clear-direcory (base dirname)
   (let ((filename (cl-fad:pathname-as-directory  (format nil "~a~a/" base dirname))))
     (cl-fad:delete-directory-and-files filename :if-does-not-exist :ignore)
     (ensure-directories-exist filename)
     filename))
 
+(defun create-direcory (base dirname)
+  (let ((filename (cl-fad:pathname-as-directory  (format nil "~a~a/" base dirname))))
+    (ensure-directories-exist filename)
+    filename))
 
 
-(defparameter *base-dir* (cl-fad:pathname-directory-pathname (car (cl-fad:list-directory "."))))
-(defparameter *log-dir* (create-and-clear-direcory *base-dir* "log"))
-(defparameter *rule-dir* (create-and-clear-direcory *base-dir* "rule"))
+
+(defparameter *base-dir* (cl-fad:pathname-directory-pathname (or *compile-file-truename* *load-truename*)))
+(defparameter *log-dir*  (create-and-clear-direcory *base-dir* "log"))
+(defparameter *rule-dir* (create-direcory *base-dir* "rule"))
+(defparameter *report-dir* (create-and-clear-direcory *base-dir* "report"))
 
 
