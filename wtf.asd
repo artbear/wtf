@@ -21,6 +21,7 @@
                                    (:file "tokens")
                                    (:file "lexer")))
              (:module :lexer-rule
+                      :serial t
                       :components ((:file "package")
                                    (:file "lexer-rule")))
              (:file "package")

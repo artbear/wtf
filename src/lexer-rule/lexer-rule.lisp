@@ -39,7 +39,7 @@
         (t (mapcan #'flatten structure))))
 
 
-
+;;;; 
 (defun run-rule (rule-name input-list dir)
   (let* ((rule (gethash rule-name *rule-table*))
          (tokenslist (flatten  (rule-structure-token-id rule)))
@@ -77,4 +77,17 @@
 
 
   ;; (:export add-rule run-rule run-all))
+
+;;; временно 
+
+(defrule 
+  :name 'check-keyword
+  :token lexer.wtf::*keyword-symbols*
+  :description "Ключевое слово не соответствует каночническому написанию"
+  :check #'(lambda (token) (let ((token-text (lexer.wtf::token-text token))
+                            (correct-word (gethash (lexer.wtf::token-type token) lexer.wtf::*correct-keywords*)))
+                        (or
+                         (equal token-text (car correct-word))
+                         (equal token-text (cadr correct-word))))))
+
 
