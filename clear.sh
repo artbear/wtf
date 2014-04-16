@@ -1,1 +1,1 @@
-find . -name *.fasl -delete
+find . -name "*.fasl" -delete
