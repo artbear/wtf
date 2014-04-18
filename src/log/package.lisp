@@ -1,3 +1,4 @@
 (defpackage :logger.wtf
   (:use :cl :config.wtf :cl-log)
-  (:export start-logger))
+  (:export :lexer :lexer.debug :lexer.info :lexer.warn)
+)

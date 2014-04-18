@@ -1,5 +1,5 @@
 (in-package :lexer-rule.wtf)
-(logger.wtf:start-logger)
+
 
 (defparameter *rule-table* (make-hash-table :test 'equal))
 

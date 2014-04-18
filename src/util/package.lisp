@@ -1,3 +1,3 @@
 (defpackage :util.wtf
- (:use :cl :config.wtf :logger.wtf)
- (:export id))
+ (:use :cl :config.wtf)
+ (:export id defstruct-and-export format-object replace-all))

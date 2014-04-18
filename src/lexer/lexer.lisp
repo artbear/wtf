@@ -1,264 +1,213 @@
 (in-package :lexer.wtf)
-(logger.wtf:start-logger)
 
 
-(defstruct codepoint
-  "Описание позиции в файле"
-  (id (util.wtf:id) :type number :read-only t)
-  (index 0 :type number :read-only t)
-  (char 0 :type number :read-only t) 
-  (line-number 0 :type number :read-only t)
-)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; макросы для сканера
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun re-cond-clause (string start block-name clause)
+  (destructuring-bind (re-form &body body) clause
+    (if (eq re-form t)
+        `(return-from ,block-name
+          (progn ,@body))
+        `(multiple-value-bind (%s %e )
+          (scan ,re-form ,string :start ,start)
+          (unless (null %s)
+            (return-from ,block-name
+              (progn ,@body)))))))
+
+(defmacro re-cond ((string &key (start 0)) &rest clauses)
+  "(re-cond (STRING :start START) (REGEXP FORMS*)*  
+If REGEXP matches STRING, then %S, %E, %SUB-S, and %SUB-E will be bound during execution of FORMS"
+  (let ((gblock (gensym))
+        (gstart (gensym))
+        (gstring (gensym)))
+    `(block ,gblock 
+      (let ((,gstart ,start)
+            (,gstring ,string))
+        ,@(loop for clause
+                in clauses
+                collect (re-cond-clause gstring gstart gblock clause))))))
+  
 
 
-(defstruct token
-  "Структура описывает прочитанный токен"
-  (id (util.wtf:id) :type number :read-only t)  
-  (type nil :type symbol :read-only t)
-  (text "" :type string :read-only t)
-  (start-point nil :type (or null codepoint) :read-only t)
-  (end-point nil :type (or null codepoint) :read-only t))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; Описание регэкспов для разбора
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defparameter string-re (create-scanner 
+                          '(:sequence
+                            :start-anchor
+                            (:alternation
+                             (:sequence  #\" (:greedy-repetition 0 nil (:alternation (:sequence #\\ :everything) (:inverted-char-class #\"))) #\")
+                             (:sequence #\' (:greedy-repetition 0 nil (:alternation (:sequence #\\ :everything) (:inverted-char-class #\'))) #\'))))
+  "Regular expression for recognizing string literals")
+
+
+(defparameter comment-re (create-scanner 
+                          '(:sequence
+                            :start-anchor 
+                              (:sequence 
+                                "//"
+                                (:greedy-repetition 0 nil
+                                    (:inverted-char-class #\Newline))
+                                #\Newline)))
+  "Regular expression for recognizing comment")
+
+(define-parse-tree-synonym non-terminator
+    (:inverted-char-class #\Newline #\Return))
+
+
+(defparameter operator-re (create-scanner 
+                           (list :sequence 
+                                 :start-anchor 
+                                 (cons :alternation
+                                       (reverse *operator-tokens*))))
+  "Regular expression for recognizing operators")
+
+(defparameter whitespace-re (create-scanner
+                                          '(:sequence
+                                            :start-anchor
+                                            (:greedy-repetition 1 nil
+                                               :whitespace-char-class)))
+  "Regular expression for consuming (and thereby skipping) whitespace ")
+
+(defparameter integer-re (create-scanner
+                          '(:sequence
+                            :start-anchor
+                             (:greedy-repetition 1 nil :digit-class)))
+  "Regular expression for recognizing integer literals")
+
+(defparameter floating-re (create-scanner
+                            '(:sequence
+                              :start-anchor
+                              (:alternation
+                                (:sequence
+                                  (:greedy-repetition 1 nil :digit-class)
+                                 #\.
+                                 (:greedy-repetition 1 nil :digit-class)
+                                 )
+                                (:sequence
+                                  #\.
+                                  (:greedy-repetition 1 nil :digit-class)))))
+  "Regular expression for recognizing floating-point literals")
+
+
+
+
 
 (defparameter *white-space* '(#\Tab #\Space #\Newline #\Return ))
+(defparameter *line-counter* (make-hash-table))
+(defparameter *count-line-counter* 0)
 
-(defstruct lexer
-  "Структура описывает настройки и состояние лексера"
-  (file-id 0 :type number :read-only t) ;; идентификатор анализируемого файла
-  (skip-WS nil :type symbol :read-only t) ;; признак анализа пробельных символов
-  (after-dot nil :type symbol ) ;; признак прочитаной точки
-  (peeked  nil :type (or null token)) ;; прочитанный токен
-  (readed  nil :type (or null token)) ;; окончательно прочитанный токен
-  (current-index 0 :type number )
-  (current-char 0 :type number) 
-  (current-line-number 0 :type number )
-  (stream nil :read-only t))
-
-
-(defmethod peek-token ((lexer lexer))
-  "Возвращает токен без изменения позиции в потоке"
-  (or (lexer-peeked lexer)
-      (setf (lexer-peeked lexer) (tokenize lexer))))
+(defun init-line-counter (in-string)
+  "Инициализирует соответствие позиции списку (номер строки, номер колонки)"
+  (let ((index 0) (line 1) (column 0))
+    (loop for c across in-string
+       :do (progn
+             (if (eq c #\Newline)
+                 (setf line (+ 1 line) column 0)
+                 (incf column))
+             (setf (gethash (incf index) *line-counter*) (list line column))))
+    (setf *count-line-counter* (hash-table-count *line-counter*))))
 
 
 
-(defmethod next-token ((object lexer))
+(defun point (x)
+  (let ((flist (gethash (min (+ 1 x) *count-line-counter*) *line-counter* 'empty)))
+    (make-codepoint :index x
+                :line-number (first flist)
+                :char (second flist))))
+    
+
+
+(defun create-token (type text start end)
+  (make-token :type type
+              :text text
+              :start-point (point start)
+              :end-point (point end)))
+
+
+(defparameter *dot-readed* nil)
+(defparameter *text* "")
+(defparameter *cursor* 0)
+(defparameter *text-length* 0)
+
+(defun set-cursor (new-pos)
+  (setf *cursor* new-pos))
+
+(defun tokenize ()
+  (when (< *cursor* *text-length*)
+    (re-cond (*text* :start *cursor*)
+             ("^$"
+              (create-token :eof "" %s %e ))
+             
+
+             (whitespace-re
+              (set-cursor  %e)
+              (setf *dot-readed* nil)
+              (create-token :ws (subseq *text*  %s  %e) %s %e))
+
+
+             (comment-re
+              (set-cursor  %e)
+              (setf *dot-readed* nil)
+              (create-token :comment-literal (subseq *text*  %s  %e) %s %e))
+             (operator-re
+              (set-cursor  %e)
+              (let* ((text (subseq *text* %s %e))
+                     (terminal (gethash text *tokens-to-symbols*))
+                     (result   (create-token terminal text  %s %e)))
+                    (setf *dot-readed* (equal terminal :dot))
+                    result))
+       
+
+
+             (floating-re
+              (set-cursor %e)
+              (setf *dot-readed* nil)
+              (create-token :number
+                            (subseq *text*  %s  %e)
+                            %s %e))
+             (integer-re
+              (set-cursor %e)
+              (setf *dot-readed* nil)
+              (create-token :number
+                            (subseq *text*  %s  %e)
+                            %s %e))
+
+             ("^(\\&|(\\#)?\\w)+"
+              (set-cursor %e)
+              (let* ((text (subseq *text* %s %e))
+                     (scope (equal "&" (subseq text 0 1)))
+                     (readed (gethash (string-downcase text) *tokens-to-symbols*))
+                     (terminal (or (if (and *dot-readed* readed) :identifier readed)
+                                   :identifier))
+                     (result (create-token  (if scope :scope terminal)  text %s %e )))
+                (setf *dot-readed* nil)
+                result))
+
+             (string-re
+              (set-cursor %e)
+              (setf *dot-readed* nil)
+              (create-token :string-literal (subseq *text*  %s  %e)  %s %e))
+             
+             ("^\\S+"
+              (error "unrecognized token: '~A'" (subseq *text* %s %e)))
+             (t
+              (error "coding error - we should never get here")))))
+
+(defun next-token ()
   "Возвращает токен. Изменяет позицию в потоке"
-  (let ((value (if (lexer-peeked object)
-      (let ((r (lexer-peeked object)))
-        (setf (lexer-peeked object) nil)
-        r)
-      (tokenize object))))
-    (setf (lexer-readed object) value)
-    value))
-
-(defmethod next-token :after ((object lexer))
- "Выводит информаци о причтанном токена в поток"
-  (let* ((token (lexer-readed object))
-         (start (token-start-point token))
-         (end (token-end-point token))
-         )
-    (if (eql :eof (token-type token))
-        (cl-log:log-message :lexer.debug "Конец потока")
-        (cl-log:log-message :lexer.debug 
-                            (format nil "Прочитан токен : Тип ~a. Текст '~a'. Начало токена (~a ~a ~a) Конец токена (~a ~a ~a) " (token-type token)
-                                    (token-text token)
-                                    (codepoint-index start) (codepoint-line-number start) (codepoint-char start)
-                                    (codepoint-index end) (codepoint-line-number end) (codepoint-char end))))))
-
-
-(defun tokenize (lexer)
-  "Преобразовывет поток символов в поток лексем"
-  (let 
-      ((stream (lexer-stream lexer ))
-       (start-index (lexer-current-index lexer ))
-       (start-line   (lexer-current-line-number lexer ))
-       (start-char  (lexer-current-char lexer ))       
-       (index 0) (line 0) (char 0)
-       (in-dot (lexer-after-dot lexer )))
-    
-    (defun start-token ()
-      ;(setf line start-line char  start-char index start-index )
-      )
-
-    (defun ctoken (type text)
-      (let ((res 
-             (make-token :type type
-                         :text text
-                         :start-point (make-codepoint :index start-index :char start-char :line-number start-line)
-                         :end-point (make-codepoint
-                                     :index (+ index start-index)
-                                     :char (+ char start-char)
-                                     :line-number (+ line start-line)))))
-        (setf (lexer-current-index lexer) (+ index start-index)
-              (lexer-current-char lexer) start-char
-              (lexer-current-line-number lexer) (+ line start-line))
-
-        res))
-
-
-    (defun peek-c ()
-      (peek-char nil stream nil nil))
-
-    (defun next-c ()
-      (let ((ch (read-char stream)))
-        (when ch
-          (incf index)
-          (if (equal #\Newline ch)
-              (setf line (1+ line) char 0 )
-              (incf char)))
-        ch))
-
-    (defun read-while (pred )
-      (with-output-to-string (*standard-output*)
-        (loop :for ch := (peek-c )
-           :while (and ch (or (null ch) (funcall pred ch)))
-           :do (princ (next-c )))))
-
-    (defun read-until (pred )
-      (with-output-to-string (*standard-output*)
-        (loop :for ch := (peek-c )
-           :until (and ch (or (null ch) (funcall pred ch)))
-           :do (princ (next-c )))))
-    
-         
-
-
-    
-    (defun read-newline ()
-      (ctoken :nl (read-while (lambda (x) (find x  '(#\Newline #\Return ))))))
-
-    
-    (defun read-whitespace ()
-      (ctoken :ws (read-while (lambda (x) (find x  '(#\Tab #\Space ))))))
-
-      
-    (defun skip-whitespace ()
-      (progn
-        (read-while (lambda (x) (find x *white-space*)))
-        (setf (lexer-current-index lexer) (+ index start-index)
-              (lexer-current-char lexer) start-char
-              (lexer-current-line-number lexer) (+ line start-line))
-        
-
-      ))
-
-    (defun read-datastring ()
-      (ctoken :datastring
-              (concatenate 'string
-                           (string (next-c ))
-                           (read-until (lambda (ch) (char= ch #\')))
-                           (string (next-c )))))
-
-    (defun read-string ()
-      "TODO. Вот тут косяк будет если поток заканчяивается кавычкой. Переписать"
-      (ctoken :string (concatenate 'string
-                                   (string (next-c ))
-                                   (with-output-to-string (*standard-output*)
-                                     (loop
-                                        (let ((ch (next-c )))
-                                          (if (char= ch #\")
-                                              (if (char= #\" (peek-c ))
-                                                  (progn
-                                                    (princ ch)
-                                                    (princ (next-c )))
-                                                  (progn
-                                                    (princ ch)
-                                                    (return)))
-                                              (princ ch))))))))
-    
-
-    (defun to-string (in-char)
-      (if in-char
-          (string in-char)
-          ""))
-
-    (defun read-comment ()
-      (let ((token 
-             (ctoken :comment
-                     (concatenate 'string "/" (read-until (lambda (x) (char= #\Newline x)))))))
-        (next-c)
-        token))
-  
-    (defun read-div-or-comment ()
-      (next-c )
-      (if (char= #\/ (peek-c ))
-          (read-comment ) ;; будем помнить что один символ уже забран
-          (ctoken :operator-div "/")))
-    
-  
-    (defun read-operator ()
-      (let ((ch (next-c )))
-        (ctoken   (gethash (string ch) *tokens-to-symbols*)
-                  (string ch))))
-    
-    (defun read-number ()
-      (let* ((text (read-while #'digit-char-p ))
-             (stext (if (eql #\. (peek-c ))
-                        (progn
-                          (next-c )
-                          (concatenate 'string "." (read-while #'digit-char-p )))
-                        "")))
-        (ctoken :digit
-                (concatenate 'string text stext))))
-  
-    (defun identifier-char-p (ch)
-      (or (alphanumericp ch)  (char= ch #\_)))
-  
-    (defun read-word-loc ()
-      (read-while #'identifier-char-p ))
-  
-    (defun read-preprocessor ()
-      (let* ((name (concatenate 'string (string (next-c)) (read-word-loc )))
-             (token (ctoken  (gethash (string-downcase name) *tokens-to-symbols*)
-                             name)))
-        token))
-    (defun read-place ()
-      (let* ((name (concatenate 'string (string (next-c )) (read-word-loc )))
-             (token (ctoken  (gethash (string-downcase name) *tokens-to-place*)
-                             name)))
-        token))
-  
-    (defun read-id-word ()
-      (let* ((name  (read-word-loc ))
-             (keyword  (gethash (string-downcase name) *tokens-to-symbols*)))
-        (prog1
-            (ctoken  (if in-dot :id (or keyword :id))
-                     name)
-          (setf in-dot nil))))
-  
-    (defun get-token ()
-      (start-token)
-        (case (peek-c)
-          ('nil (make-token :type :eof ))
-          ((#\Newline #\Return)
-           (if (not (lexer-skip-ws lexer))
-               (read-newLine)
-               (progn
-                 (skip-whitespace)
-                 (tokenize lexer))))
-          
-          ((#\Tab #\Space )
-           (if (not (lexer-skip-ws lexer))
-               (read-whitespace)
-               (progn
-                 (skip-whitespace)
-                 (tokenize lexer))))
-
-          (#\' (read-datastring ))
-          (#\" (read-string ))
-          (#\/ (read-div-or-comment ))
-          (#\. (progn (setf in-dot t) (read-operator )))
-          ((\~ #\+ #\- #\* #\> #\< #\= #\% #\: #\? #\( #\) #\[ #\] #\, #\;) (read-operator))
-          (#\# (read-preprocessor))
-          (#\& (read-place))
-          ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) (read-number))
-          (otherwise (read-id-word ))))
-
-    (get-token)))
+    (let ((value (tokenize)))
+      (cl-log:log-message :lexer  (format-object 'log value))
+      value))
 
 
 (defun create-lexer (string-to-analize)
-  (make-lexer :skip-ws nil :stream (make-string-input-stream string-to-analize)  ))
+  (setf *text* string-to-analize)
+  (setf *cursor* 0)
+  (setf *text-length* (length *text*)))
 
 
 (defun read-file-into-string (pathname)
@@ -275,17 +224,33 @@
 
 
 (defun lexer->list (input-string)
-  (let ((lexer (create-lexer input-string)))
-    (loop as _token = (next-token lexer)
-       while (not (eql :eof (token-type _token)))
-       collect  _token)))
+  (init-line-counter input-string)
+  (create-lexer input-string)
+  (prog1
+      (loop as _token = (next-token)
+         while  _token
+         collect  _token)
+    (setf *line-counter* (make-hash-table))))
 
 (defun file->list (filename)
-  (cl-log:log-message :lexer.debug (format nil "Начали разбор файла ~a " filename))
+  (cl-log:log-message :lexer (format nil "Начали разбор файла ~a " filename))
   (lexer->list (read-file-into-string filename)))
 
 
 (defun string->list (input)
-  (cl-log:log-message :lexer.debug (format nil "Начали разбор строки '~a' " input))  
   (lexer->list input))
+
+
+
+(cl-log:defcategory :lexer )
+(let ((name-keyword :lexer))
+  (cl-log:start-messenger 'cl-log:text-file-messenger
+                          :name name-keyword
+                          :filename (make-pathname
+                                     :directory (pathname-directory
+                                                 (ensure-directories-exist
+                                                  (pathname config.wtf::*log-dir*)))
+                                     :name (string-downcase name-keyword)
+                                     :type "log")
+                          :category name-keyword))
 

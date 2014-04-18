@@ -42,3 +42,19 @@
 (defparameter *report-dir* (create-and-clear-direcory *base-dir* "report"))
 
 
+(in-package :cl-log)
+
+(setf (cl-log:log-manager)
+      (make-instance 'cl-log:log-manager :message-class 'formatted-message))
+
+
+
+
+(defmethod format-message ((self formatted-message))
+  (format nil "~a ~a ~?~&"
+	  (local-time:format-timestring nil 
+					(local-time:universal-to-timestamp 
+					 (timestamp-universal-time (message-timestamp self))))
+	  (message-category self)
+	  (message-description self)
+	  (message-arguments self)))

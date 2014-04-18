@@ -8,7 +8,6 @@
 
 
 
-
 (defparameter *filename* "data/CommonModule.qMeta.Module.txt")
 (defparameter *tst* (lexer.wtf:file->list *filename*))
 (defparameter *where* (config.wtf:build-dir config.wtf:*report-dir* (lexer-rule.wtf::split-by-dot (pathname-name *filename*))))

@@ -1,2 +1,2 @@
 (defpackage :wtf
- (:use :cl :logger.wtf :lexer.wtf ))
+ (:use :cl  :lexer.wtf :lexer-rule.wtf ))

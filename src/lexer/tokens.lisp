@@ -1,6 +1,6 @@
 (in-package :lexer.wtf)
 
-(logger.wtf:start-logger)
+
 
 ;;;; Token definitions
 (defmacro deftoken (token-type symbol key &optional en-key)

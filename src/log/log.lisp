@@ -1,26 +1,30 @@
-
 (in-package :logger.wtf)
 
+(cl-log:defcategory :lexer (or :lexer.debug :lexer.info :lexer.warn))
+(cl-log:defcategory :lexer-rule (or :lexer-rule.debug :lexer-rule.info :lexer-rule.warn))
+(cl-log:defcategory :wtf)
 
-(defun logger-name (filepathname)
-  (let ((dir (config.wtf:build-dir *log-dir* (cdr (pathname-directory filepathname)))))
-    (make-pathname
-     :directory dir
-     :type "log"
-     :name (pathname-name filepathname))))
-  
-
-
-(defmacro start-logger ()
+(defun launch-logger (&optional (log-dir ""))
+  "Start logging facility.  Create log-dir if necessary."
   (when config.wtf:*debug-log*
-    (let* ((filename (or *compile-file-truename* *load-truename*))
-           (category-symbol (format nil ":~a" (pathname-name filename))))
-      `(progn
-         (format t "Начали логирование модуля ~a в файл ~a. Имя логгера ~a" ,filename (logger-name ,filename) ,category-symbol)
-       (cl-log:defcategory (intern ,category-symbol) (append (list 'or) (map 'list (lambda (x) (intern (format nil "~a~a.~a" '#:s- ,category-symbol x))) (list 'info 'debug 'warn 'error))))
-       (start-messenger 'text-file-messenger
-                        :filter (append (list 'or) (map 'list (lambda (x) (intern (format nil "~a.~a" ,category-symbol x))) (list 'info 'debug 'warn 'error)))
-                        :name (intern ,category-symbol)
-                        :filename (logger-name ,filename))))))
+    (flet ((start-log-messenger (name-keyword)
+             (cl-log:start-messenger
+              'cl-log:text-file-messenger
+              :name name-keyword
+              :filename (make-pathname
+                         :directory (pathname-directory
+                                     (ensure-directories-exist
+                                      (pathname log-dir)))
+                         :name (string-downcase name-keyword)
+                         :type "log")
+              :category name-keyword)))
+
+      (setf (cl-log:log-manager)
+            (make-instance 'cl-log:log-manager))
+      (values
+       (start-log-messenger :lexer)
+       (start-log-messenger :lexer-rule)))))
 
 
+
+(launch-logger config.wtf:*log-dir*)
