@@ -23,6 +23,7 @@
                       :components ((:file "package" )
                                    (:file "tokens")
                                    (:file "structs")
+                                   (:file "macros")
                                    (:file "format-object")
                                    (:file "lexer")))
              (:module :lexer-rule
