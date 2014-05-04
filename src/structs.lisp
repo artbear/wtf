@@ -16,3 +16,12 @@
   (start-point nil :type  codepoint :read-only t)
   (end-point nil :type codepoint :read-only t))
 
+
+(defstruct rule
+  "Структура правила"
+  (id (id) :type number :read-only t)
+  (name nil :type symbol :read-only t)
+  (token-id nil  :read-only t)
+  (description-rule "" :type string :read-only t)
+  (fn nil :read-only t))
+

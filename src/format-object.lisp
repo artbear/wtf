@@ -1,35 +1,54 @@
 (in-package :wtf)
 
-(defmethod format-object (what value)
-  (format nil "GENERIC what = ~a value = ~a" what value ))
+(defmethod format-object (what value stream)
+  (format stream "GENERIC what = ~a value = ~a" what value ))
   
-(defmethod format-object ((what (eql 'log)) (value string))
-  (replace-all
-   (replace-all value (string #\NewLine) "#n" ) (string #\Return) "#r"))
+
+(defmethod format-object (what  (value list) stream)
+  (format stream "<list>")
+  (dolist (item value)
+    (format-object what item stream))
+  (format stream "</list>"))
+
+(defmethod format-object ((what (eql 'xml)) (value 1C-FILE-ENTRY) stream)
+  (format stream "<?xml version=\"1.0\" encoding=\"UTF-8\"?> ")
+  (format stream "<file>")
+  (format stream "<name>~a</name>" (slot-value value 'filename))
+  (format stream "<rules>")
+  (loop for key being the hash-keys of (slot-value value 'rule-lexer-result)
+     using (hash-value token-list)
+     do (progn
+          (format-object what key stream)
+          (format-object what token-list stream)))
+  (format stream "</rules>")
+  (format stream "</file>"))
+
+(defmethod format-object ((what (eql 'xml)) (value rule) stream)
+  (format stream "<rule>")
+  (format stream "<name>~a</name>" (rule-name value))
+  (format stream "<description>~a</description>" (rule-description-rule value))
+  (format stream "</rule>"))
+
+
+(defmethod format-object ((what (eql 'xml)) (value token) stream)
+  (format stream "<token>")
+  (format stream "<type>~a</type>" (token-type value))
+  (format stream "<text>~a</text>" (token-text value))
+  (format stream "<start>")
+  (format-object what (token-start-point value) stream)
+  (format stream "</start>")
+  (format stream "<end>")
+  (format-object what (token-end-point value) stream)
+  (format stream "</end>")
+  (format stream "</token>"))
+
+
+(defmethod format-object ((what (eql 'xml)) (value codepoint) stream)
+  (format stream "<point>")
+  (format stream "<index>~a</index>" (codepoint-index value))
+  (format stream "<line>~a</line>" (codepoint-line-number value))
+  (format stream "<char>~a</char>" (codepoint-char value))
+  (format stream "</point>"))
+
   
-(defmethod format-object ((what (eql 'log)) (value codepoint))
-  (format nil "(~a,~a,~a)" (codepoint-index value) (codepoint-line-number value) (codepoint-char value)))
-
-(defmethod format-object ((what (eql 'log)) (value token))
-  (when config.wtf:*debug-log*
-    (format nil "Token id = '~a' type = '~a' value = '~a' start = '~a' end = '~a'"
-            (token-id value) (token-type value)
-            (format-object 'log (token-text value))
-            (format-object 'log (token-start-point value))
-            (format-object 'log (token-end-point value)))))
-
-
-
-(defmethod format-object ((what (eql 'xml)) (value token))
-  (when config.wtf:*debug-log*
-    (format nil "<token id = '~a' type = '~a' value = '~a' >
-<start> ~a </start>
-<end>~a</end>"
-            (token-id value) (token-type value)
-             (token-text value)
-            (format-object 'xml (token-start-point value))
-            (format-object 'xml (token-end-point value)))))
-
-(defmethod format-object ((what (eql 'xml)) (value codepoint))
-  (format nil "<index>~a</index><line>~a</linse><char>~a</char>" (codepoint-index value) (codepoint-line-number value) (codepoint-char value)))
-
+  

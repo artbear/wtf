@@ -52,6 +52,12 @@ is replaced with replacement."
 
 
 
-(defgeneric format-object (what  value)
+(defgeneric format-object (what  value stream)
   (:documentation "Форматированый вывод"))
 
+
+
+(defun flatten (data)
+  (cond ((null data) nil)
+        ((atom data) (list data))
+        (t (mapcan #'flatten data))))
