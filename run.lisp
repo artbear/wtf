@@ -6,7 +6,10 @@
 (asdf:oos 'asdf:compile-op :wtf-asdf)
 (asdf:oos 'asdf:load-op :wtf-asdf)
 
-(load "wtf-test.asd")
-(asdf:oos 'asdf:compile-op :wtf-test-asdf)
-(asdf:oos 'asdf:load-op :wtf-test-asdf)
 
+;(load "wtf-test.asd")
+;(asdf:oos 'asdf:compile-op :wtf-test-asdf)
+;(asdf:oos 'asdf:load-op :wtf-test-asdf)
+
+(in-package :wtf)
+(run-all)

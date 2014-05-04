@@ -8,5 +8,8 @@ wtf
 
 
 
-Запуск - sbcl --load run.lisp
+Запуск - 
 
+sbcl --load run.lisp --quit
+
+В файле congig.lisp выставить *base-dir* в директорию куда склонировали репозиторий
