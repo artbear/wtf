@@ -1,10 +1,10 @@
 
 (defrule :where 'codelexer
   :name 'check-keyword
-  :token lexer.wtf::*keyword-symbols*
+  :token *keyword-symbols*
   :description "Ключевое слово не соответствует каночническому написанию"
-  :check #'(lambda (token) (let ((token-text (lexer.wtf::token-text token))
-                            (correct-word (gethash (lexer.wtf::token-type token) lexer.wtf::*correct-keywords*)))
+  :check #'(lambda (token) (let ((token-text (token-text token))
+                            (correct-word (gethash (token-type token) *correct-keywords*)))
                         (or
                          (equal token-text (car correct-word))
                          (equal token-text (cadr correct-word))))))

@@ -7,29 +7,15 @@
             :depends-on ("config")
             :serial t
             :components
-            (
-;
-;             (:module :log :components
-;                      ((:file "package")
-;                       (:file "log")))
-;
-             (:module :util
-                      :components ((:file "package")
-                                   (:file "util")))
-             (:module :lexer
-                      :depends-on ( :util)
-                      
-                      :serial t
-                      :components ((:file "package" )
-                                   (:file "tokens")
-                                   (:file "structs")
-                                   (:file "macros")
-                                   (:file "format-object")
-                                   (:file "lexer")))
-             (:module :lexer-rule
-                      :serial t
-                      :components ((:file "package")
-                                   (:file "lexer-rule")))
-             (:file "package")
-             (:file "main")))))
-  
+             ((:file "package")
+             (:file "util")
+             (:file "log")
+             (:file "tokens")
+             (:file "structs")
+             (:file "macros-lexer")
+             (:file "lexer")
+             (:file "lexer-rule")
+             (:file "files")
+             (:file "format-object")
+             (:file "main")
+))))

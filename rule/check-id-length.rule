@@ -2,4 +2,4 @@
   :name 'check-id-length
   :token ':identifier
   :description "Длинна переменной меньше 2 символов"
-  :check #'(lambda (token) (< 2 (length (lexer.wtf::token-text token)))))
+  :check #'(lambda (token) (< 2 (length (token-text token)))))
