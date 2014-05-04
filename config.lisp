@@ -5,6 +5,7 @@
            *rule-dir*
            *report-dir*
            *debug-log*
+           *data-dir*
            build-dir
            create-and-clear-direcory
            create-direcory )
@@ -36,10 +37,12 @@
 
 
 
-(defparameter *base-dir* (cl-fad:pathname-directory-pathname (or *compile-file-truename* *load-truename*)))
+(defparameter *base-dir*  "/home/wwalll/src/wtf/")
+;;(cl-fad:pathname-directory-pathname (or *compile-file-truename* *load-truename*)))
 (defparameter *log-dir*  (create-and-clear-direcory *base-dir* "log"))
 (defparameter *rule-dir* (create-direcory *base-dir* "rule"))
 (defparameter *report-dir* (create-and-clear-direcory *base-dir* "report"))
+(defparameter *data-dir* (create-direcory *base-dir* "data"))
 
 
 (in-package :cl-log)
