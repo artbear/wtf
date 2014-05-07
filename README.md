@@ -13,3 +13,6 @@ wtf
 sbcl --load run.lisp --quit
 
 В файле congig.lisp выставить *base-dir* в директорию куда склонировали репозиторий
+
+
+в файле doc/doc.org - попытка описания

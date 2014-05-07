@@ -1,0 +1,10 @@
+
+ start();
+
+#if клиент then
+ somecode();
+#else
+ ovetcode();
+#endif
+
+end();

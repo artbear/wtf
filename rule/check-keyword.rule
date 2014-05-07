@@ -3,9 +3,8 @@
   :name 'check-keyword
   :token *keyword-symbols*
   :description "Ключевое слово не соответствует каночническому написанию"
-  :check #'(lambda (token) (let ((token-text (token-text token))
-                            (correct-word (gethash (token-type token) *correct-keywords*)))
-                        (or
-                         (equal token-text (car correct-word))
-                         (equal token-text (cadr correct-word))))))
+  :check #'(lambda (text type start end file) 
+  (let ((correct-word (gethash type *correct-keywords* '())))
+       (reduce #'(lambda(x y) (or x y)) 
+               (mapcar #'(lambda(x) (equal x text)) correct-word)))))
 

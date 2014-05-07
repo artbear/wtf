@@ -1,25 +1,53 @@
 (in-package :wtf)
 
+(defun write-escaped (string )
+  (replace-all
+   (replace-all
+    (replace-all
+     (replace-all
+      (replace-all string "<" "&lt;")
+      ">" "&gt;")
+     "&" "&amp;")
+    "'" "&apos;")
+   "\"" "&quot;"))
+
+
 (defmethod format-object (what value stream)
   (format stream "GENERIC what = ~a value = ~a" what value ))
   
+(defmethod format-object ((what (eql 'xml)) (value symbol) stream)
+  (format stream "<Symbol>~a</Symbol>" value))
+  
+(defmethod format-object ((what (eql 'xml)) (value hash-table) stream)
+  (format stream "<HashTable>")
+  (loop for key being the hash-keys of value
+     using (hash-value hash-value)
+     do (progn
+          (format stream "<Item>")
+          (format stream "<Key>")
+          (format-object what key stream)
+          (format stream "</Key>")
+          (format stream "<Value>")
+          (format-object what hash-value stream)
+          (format stream "</Value>")
+          (format stream "</Item>")))
+  (format stream "</HashTable>"))
 
 (defmethod format-object (what  (value list) stream)
-  (format stream "<list>")
+  (format stream "<List>")
   (dolist (item value)
     (format-object what item stream))
-  (format stream "</list>"))
+  (format stream "</List>"))
 
-(defmethod format-object ((what (eql 'xml)) (value 1C-FILE-ENTRY) stream)
+(defmethod format-object ((what (eql 'xml)) (value FILE-ENTRY) stream)
   (format stream "<?xml version=\"1.0\" encoding=\"UTF-8\"?> ")
   (format stream "<file>")
   (format stream "<name>~a</name>" (slot-value value 'filename))
+  (format stream "<lexeme>")
+  (format-object what  (slot-value value 'token-list) stream)
+  (format stream "</lexeme>")
   (format stream "<rules>")
-  (loop for key being the hash-keys of (slot-value value 'rule-lexer-result)
-     using (hash-value token-list)
-     do (progn
-          (format-object what key stream)
-          (format-object what token-list stream)))
+  (format-object what  (slot-value value 'rule-result) stream)
   (format stream "</rules>")
   (format stream "</file>"))
 
@@ -31,9 +59,9 @@
 
 
 (defmethod format-object ((what (eql 'xml)) (value token) stream)
-  (format stream "<token>")
+  (format stream "<token id=\"~a\">" (token-id value))
   (format stream "<type>~a</type>" (token-type value))
-  (format stream "<text>~a</text>" (token-text value))
+  (format stream "<text>~a</text>" (write-escaped (token-text value)))
   (format stream "<start>")
   (format-object what (token-start-point value) stream)
   (format stream "</start>")

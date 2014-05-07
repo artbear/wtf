@@ -178,8 +178,7 @@
 
 (defun next-token ()
   "Возвращает токен. Изменяет позицию в потоке"
-    (let ((value (tokenize)))
-      value))
+  (tokenize))
 
 
 (defun create-lexer (string-to-analize)
@@ -210,8 +209,9 @@
          collect  _token)
     (setf *line-counter* (make-hash-table))))
 
-(defun file->list (filename)
-  (lexer->list (read-file-into-string filename)))
+(defun file->list (file)
+  (setf *current-file* file)
+  (lexer->list (read-file-into-string (slot-value file 'filename ))))
 
 
 (defun string->list (input)

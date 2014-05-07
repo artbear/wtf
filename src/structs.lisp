@@ -23,5 +23,16 @@
   (name nil :type symbol :read-only t)
   (token-id nil  :read-only t)
   (description-rule "" :type string :read-only t)
+  (scope nil :type symbol :read-only t)
   (fn nil :read-only t))
+
+
+
+(defclass file-entry ()
+  ((filename :initform "" :initarg :filename :accessor :filename)
+   (token-list :initform nil :accessor :token-list)
+   (rule-result :initform (make-hash-table :test 'equal) :accessor rule-result)))
+
+
+
 

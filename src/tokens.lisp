@@ -144,10 +144,10 @@
 (deftoken :keyword :server "Сервер" "server" ) 
 (deftoken :keyword :externalconection "внешнеесоединение" "externalconection" ) 
 
-(deftoken :keyword :preprocessor-if "#если" "#if" )
-(deftoken :keyword :preprocessor-endif "#конецесли" "#endif" )
-(deftoken :keyword :preprocessor-elsif "#иначеесли" "#elsif" )
-(deftoken :keyword :preprocessor-else "#иначе" "#else" )
+(deftoken :keyword :preprocessor-if "#Если" "#If" )
+(deftoken :keyword :preprocessor-endif "#КонецЕсли" "#EndIf" )
+(deftoken :keyword :preprocessor-elsif "#ИначеЕсли" "#Elsif" )
+(deftoken :keyword :preprocessor-else "#Иначе" "#Else" )
 
 (deftoken :place :client-place "&наклиенте" "&client" )
 (deftoken :place :server-place "&насервере" "&server" )

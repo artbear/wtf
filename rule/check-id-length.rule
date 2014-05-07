@@ -2,4 +2,5 @@
   :name 'check-id-length
   :token ':identifier
   :description "Длинна переменной меньше 2 символов"
-  :check #'(lambda (token) (< 2 (length (token-text token)))))
+  :check #'(lambda (text type start end file) 
+         (< 2 (length text ))))

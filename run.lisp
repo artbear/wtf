@@ -1,5 +1,6 @@
 (ql:quickload "cl-ppcre")
 (ql:quickload "cl-log")
+(ql:quickload "yacc")
 (ql:quickload "rt")
 
 (load "wtf.asd")
