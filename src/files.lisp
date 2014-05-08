@@ -10,9 +10,12 @@
 
 
 (defun lexer-rules-onefile (object)
+  (format t "~% Проерям файл ~a" (slot-value object 'filename))
   (setf *current-file* object)
   (setf (slot-value object 'token-list) (file->list object))
-  (apply-rules 'codelexer (slot-value object 'token-list) object))
+  (apply-rules 'token object)
+  (apply-rules 'lexer object)
+  )
 
   
 (defun lexer-rules ()
@@ -27,7 +30,7 @@
      using (hash-value value)
      do (let ((outputname (make-pathname :directory (pathname-directory config.wtf:*report-dir*)
                                          :name (pathname-name key):type "xml")))
-           (with-open-file (stream outputname :direction :output :if-exists :overwrite :if-does-not-exist :create)
+           (with-open-file (stream outputname :direction :output :if-exists :supersede :if-does-not-exist :create)
              (format-object 'xml value stream)))))
 
 (defun run-all ()

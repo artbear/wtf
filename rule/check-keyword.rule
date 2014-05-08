@@ -1,5 +1,4 @@
-
-(defrule :where 'codelexer
+(defrule :where 'token
   :name 'check-keyword
   :token *keyword-symbols*
   :description "Ключевое слово не соответствует каночническому написанию"

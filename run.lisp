@@ -14,3 +14,4 @@
 
 (in-package :wtf)
 (run-all)
+(defparameter *file* (make-instance 'file-entry :filename "/home/wwalll/src/wtf/data/test.txt"))

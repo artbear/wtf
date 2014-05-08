@@ -5,11 +5,8 @@
 
 
 
-(defgeneric apply-rules (rule-type value object)
+(defgeneric apply-rules (rule-type  object)
   (:documentation "Метод для применени правил"))
-
-(defgeneric check-rule (rule-type rule value object)
-  (:documentation "Проверяет переданное правило на значиении value, и записывает результат"))
 
 (defgeneric add-rule-result (rule value object)
   (:documentation "Запись результата проверки в объект"))
@@ -54,20 +51,51 @@
              (append (list value) resultlist)))))
 
 
-(defmethod check-rule ((rule-type (eql 'codelexer)) rule (value token) object)
-  (unless (apply (rule-fn rule) (list (token-text value) (token-type value) (token-start-point value) (token-end-point value) object))
-    (add-rule-result rule value object)))
 
 
-(defmethod apply-rules ((rule-type (eql 'codelexer)) (value token) object)
-  "Метод просто анализирует токен"
-  (let ((rules-hash (gethash rule-type *rule-table*)))
-    (let ((used-rules (gethash (token-type value) rules-hash)))
-      (loop for rule in used-rules
-           do (check-rule rule-type rule value object)))))
-
-
-(defmethod apply-rules ((rule-type (eql 'codelexer)) (value list) object)
+(defmethod apply-rules ((rule-type (eql 'token))  object)
   "Применим вызов правила ко всему списку"
-  (loop for item in value
-     do (apply-rules rule-type item object)))
+  (loop for value in (slot-value object 'token-list)
+     do 
+       (let ((rules-hash (gethash rule-type *rule-table*)))
+         (let ((used-rules (gethash (token-type value) rules-hash)))
+           (loop for rule in used-rules
+              do (if (apply (rule-fn rule) (list (token-text value) (token-type value) (token-start-point value) (token-end-point value) object))
+                     (add-rule-result rule value object)))))))
+
+
+
+
+(defmacro do-vector (var-seq &body body)
+  (destructuring-bind (var user-index seq) var-seq
+    (let ((vector (gensym "VECTOR"))
+	  (index (gensym "INDEX")))
+      `(let ((,vector ,seq))
+	(dotimes (,index (length ,vector))
+	  (let ((,var (aref ,vector ,index))
+                (,user-index  ,index))
+	    ,@body))))))
+
+(defmethod apply-rules ((rule-type (eql 'lexer))  object)
+  "Применим вызов правила лексера"
+  (let ((vector (apply #'vector (slot-value object 'token-list)))
+        (rules-hash (gethash rule-type *rule-table*)))
+    (do-vector (value index vector)
+      (let ((used-rules (gethash (token-type value) rules-hash)))
+        (loop for rule in used-rules
+           do (if (apply (rule-fn rule) (list (token-text value) (token-type value) (token-start-point value) (token-end-point value) object index vector))
+                  (add-rule-result rule value object)))))))
+
+
+(defun find-in-vector (index data skip  inc-value)
+  (if (or (= 0 index) (= index (length data)))
+      nil
+      (let ((value (aref data index)))
+        (if (equal (token-type value) skip)
+            (find-in-vector (+ inc-value index) data skip inc-value)
+            value))))
+
+  
+(defun find-pred (index data &key skip )
+  (find-in-vector (1- index) data skip  -1)
+  )

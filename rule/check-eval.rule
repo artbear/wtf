@@ -1,0 +1,14 @@
+(defrule :where 'lexer
+  :name 'check-keyword
+  :token :identifier
+  :description "Использование Выполнить/Вычислить может быть опасным."
+  :check #'(lambda (text type start end file index data)
+             (let ((need  (reduce #'(lambda(x y) (or x y)) 
+                                  (mapcar #'(lambda(x) (equal x (string-downcase  text))) '("eval" "execute" "выполнить" "вычислить")))))
+               (if need 
+                   (let ((maydot (find-pred index data :skip :ws)))
+                     (and (token-p maydot)  (not (equal :dot (token-type maydot)))))
+                 nil))))
+
+
+

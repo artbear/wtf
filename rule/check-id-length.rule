@@ -1,6 +1,6 @@
-(defrule :where 'codelexer
+(defrule :where 'token
   :name 'check-id-length
   :token ':identifier
   :description "Длинна переменной меньше 2 символов"
   :check #'(lambda (text type start end file) 
-         (< 2 (length text ))))
+         (> 2 (length text ))))

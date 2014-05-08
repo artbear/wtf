@@ -1,0 +1,8 @@
+(defgeneric foo (object &key &allow-other-keys)
+  (:documentation "The generic function. Here is where the docstring is defined."))
+
+(defmethod foo ((object (eql 'class-a)) &key &allow-other-keys)
+  (print "Code goes here. We dispatched based on type Class A."))
+
+(defmethod foo ((object (eql 'class-b)) &key (x 1) (y 2) &allow-other-keys)
+  (print "Code goes here. We dispatched based on type Class B. We have args X and Y."))
