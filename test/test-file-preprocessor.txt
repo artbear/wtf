@@ -1,10 +1,12 @@
 
  start();
 
-#if клиент then
+#if клиент and внешнеесоединение then
  somecode();
-#else
- ovetcode();
+#elsif сервер тогда
+ дляСервера();
+#иначе
+  иначечтотонадосделать();
 #endif
 
 end();

@@ -6,7 +6,7 @@
              (let ((need  (reduce #'(lambda(x y) (or x y)) 
                                   (mapcar #'(lambda(x) (equal x (string-downcase  text))) '("eval" "execute" "выполнить" "вычислить")))))
                (if need 
-                   (let ((maydot (find-pred index data :skip :ws)))
+                   (let ((maydot (wtf::find-pred index data :skip :ws)))
                      (and (token-p maydot)  (not (equal :dot (token-type maydot)))))
                  nil))))
 

@@ -1,9 +1,8 @@
 (in-package :wtf)
 
-(defparameter *tst-paramter* (file->list (make-instance 'file-entry :filename  "/home/wwalll/src/wtf/test/test-file-preprocessor.txt")))
 
 
-(defparameter *preprocessor-token* '(:preprocessor-if :preprocessor-endif :preprocessor-else  :preprocessor-elsid :then :client :server :externalconection))
+(defparameter *preprocessor-token* '(:preprocessor-if :preprocessor-endif :preprocessor-else  :preprocessor-elsif :then :client :server :externalconection :or :and :not))
 
 (defparameter *inside-preprocessor* nil)
 
@@ -53,7 +52,7 @@
 (yacc:define-parser preprocessor
   (:muffle-conflicts t)
   (:start-symbol programm)
-  (:terminals (:any :or :and :not :client :server :preprocessor-if :preprocessor-endif :preprocessor-elsif :preprocessor-else :then))
+  (:terminals (:any :or :and :not :client :server :EXTERNALCONECTION :preprocessor-if :preprocessor-endif :preprocessor-elsif :preprocessor-else :then))
 
   (:precedence nil)
   
@@ -104,22 +103,22 @@
       (:preprocessor-else programm #'(lambda ($1 $2) (declare (ignore $1)) $2)))
 
   (expression
-   (:not expression #'(lambda(x y) (make-unary-op :op x :op1 y)))
+   (:not expression #'(lambda(x y) (make-unary-op :op 'not :op1 y)))
    and-expression)
 
    (and-expression
-    (and-expression :and or-expression #'(lambda(x y z) (make-binary-op :op y :op1 x :op2 z)))
+    (and-expression :and or-expression #'(lambda(x y z) (make-binary-op :op 'and :op1 x :op2 z)))
     or-expression)
 
    (or-expression
-    (or-expression :or const-expression #'(lambda(x y z) (make-binary-op :op y :op1 x :op2 z)))
+    (or-expression :or const-expression #'(lambda(x y z) (make-binary-op :op 'or :op1 x :op2 z)))
     const-expression)
 
    (const-expression
     (:open expression :close #'(lambda (x y z) (declare (ignore x z)) y))
     (:client #'(lambda (x)   (make-const :data (token-type x))))
     (:server #'(lambda (x)   (make-const :data (token-type x))))
-    (:externalconection #'(lambda (x)   (make-const :data (token-type x)))))
+    (:EXTERNALCONECTION #'(lambda (x)   (make-const :data (token-type x)))))
   
 )
 
@@ -128,28 +127,45 @@
 
 
 
-(defun local-eval (data)
+(defun local-eval (data context)
+  (cond
+    ((const-p data) (equal (const-data data) context))
+    ((unary-op-p data) (if (null (unary-op-op data))
+                           (local-eval (unary-op-op1 data) context)
+                           (not (local-eval (unary-op-op1 data) context))))
+    ((binary-op-p data) (let ((x (local-eval (binary-op-op1 data) context))
+                              (y (local-eval (binary-op-op2 data) context))
+                              (op  (binary-op-op data)))
+                          (cond
+                            ((equal 'and op) (and x y))
+                            ((equal 'or op) (or x y))
+                            (t (error (format nil "Unknown operator ~a" op))))))
+    (t  (error (format nil "Unknown token ~a" data)))))
 
-  (error "stop"
-  ))
 
-
-(defun compile-one-preprocessor (data context)
+(defun compile-if (data context)
   (let ((expr (if-op-condition data)))
-    (if (local-eval expr)
+    (if (local-eval expr context)
         (if-op-true-part data)
         (if (null (if-op-switch-part data))
             (if-op-default-part data)
-            (loop for x in (if-op-switch-part data)
-               do (if (local-eval (if-part-condition x))
-                      (return (if-part-true-part x))))))))
+            (let ((switchdata (if (listp (if-op-switch-part data)) (if-op-switch-part data) (list (if-op-switch-part data)))))
+            (loop for x in switchdata
+               do (if (local-eval (if-part-condition x) context)
+                      (return (if-part-true-part x)))))))))
 
 
 (defun compile-preprocessor (data context)
-  (loop for x in data
+  (flatten
+   (loop for x in data
      collect (if (token-p x)
                  x
-                 (compile-one-preprocessor x context))))
+                 (compile-if x context)))))
+
+
+
+
+
 
 
 (defun group-items (fn list)
@@ -168,4 +184,6 @@
 (defun group-list (list)
   (group-items #'(lambda (x) (token-p  x)) list))
 
-(defparameter *tt* (group-list (yacc:parse-with-lexer (lexer-fn  (remove-unused *tst-paramter*)) preprocessor)))
+(defun parse-preprocessor (data)
+  (yacc:parse-with-lexer (lexer-fn  (remove-unused data)) preprocessor))
+  

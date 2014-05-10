@@ -8,5 +8,6 @@
             :serial t
             :components
              ((:file "lexer-test")
+	    (:file "preprocessor-test")
              (:file "main")))))
   
