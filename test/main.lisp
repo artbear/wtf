@@ -1,2 +1,2 @@
-(in-package :lexer-test)
+(in-package :wtf-test)
 (do-tests)

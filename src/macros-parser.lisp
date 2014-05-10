@@ -49,7 +49,7 @@
 ;		   (:print-goto-graph t)
 ;		   (:print-lookaheads )
                    (:start-symbol ,starting-symbol)
-                   (:terminals (append (list :any ) *keyword-symbols* ))
+                   (:terminals  *keyword-symbols* )
                    (:precedence nil)
                    ,starting-point)))
     (append header (generate-productions productions))))
