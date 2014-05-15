@@ -2,6 +2,8 @@
 (ql:quickload "cl-log")
 (ql:quickload "yacc")
 (ql:quickload "rt")
+(ql:quickload "dso-lex")
+(ql:quickload "dso-util")
 
 (load "wtf.asd")
 (asdf:oos 'asdf:compile-op :wtf-asdf)

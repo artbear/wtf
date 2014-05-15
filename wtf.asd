@@ -12,7 +12,7 @@
              (:file "log")
              (:file "tokens")
              (:file "structs")
-             (:file "macros-lexer")
+             (:file "lexer-dso")
              (:file "macros-parser")
              (:file "function-lexer")
              (:file "rules")

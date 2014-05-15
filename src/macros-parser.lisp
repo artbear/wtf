@@ -49,7 +49,7 @@
 ;		   (:print-goto-graph t)
 ;		   (:print-lookaheads )
                    (:start-symbol ,starting-symbol)
-                   (:terminals  *keyword-symbols* )
+                   (:terminals   ,(expand-hashtable-to-values *tokens-to-symbols* ) )
                    (:precedence nil)
                    ,starting-point)))
     (append header (generate-productions productions))))

@@ -1,5 +1,9 @@
 
- start();
+
+var x export;
+
+function xx()
+start();
 
 #if клиент and внешнеесоединение then
  somecode();
@@ -10,3 +14,5 @@
 #endif
 
 end();
+
+endfunction
