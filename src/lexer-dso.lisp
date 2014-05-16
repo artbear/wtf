@@ -1,6 +1,7 @@
 (in-package :wtf)
 
 (deflexer 1C-scan (:priority-only t)
+  ("//(?:[^\n])*\n" :comment-line)
   ("\\." :dot)
   (";" :semi)
   ("\\?" :hook)

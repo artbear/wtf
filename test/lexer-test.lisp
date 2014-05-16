@@ -20,16 +20,9 @@
       doStuff(\"nonsense\", 45.0, f(m));
     endfunction
     ")
-  ((:COMMENT-LITERAL "// строка комментария#n") (:WS "    ")
-               (:FUNCTION "function") (:WS " ") (:OPEN "(") (:IDENTIFIER "f")
-               (:CLOSE ")") (:WS "#n      ") (:VAR "var") (:WS " ")
-               (:IDENTIFIER "m") (:SEMICOLON ";") (:WS "#n      ")
-               (:IDENTIFIER "doStuff") (:OPEN "(")
-               (:STRING-LITERAL "\"nonsense\"") (:COMMA ",") (:WS " ")
-               (:NUMBER "45.0") (:COMMA ",") (:WS " ") (:IDENTIFIER "f")
-               (:OPEN "(") (:IDENTIFIER "m") (:CLOSE ")") (:CLOSE ")")
-               (:SEMICOLON ";") (:WS "#n    ") (:ENDFUNCTION "endfunction")
-   (:WS "#n    ")))
-
+  ((:COMMENT-LINE "// строка комментария#n    fun") (:ID "ction")
+               (:WS " ") (:OPEN "(") (:ID "f") (:CLOSE ")") (:WS "#n      ")
+               (:VAR "var") (:WS " ") (:ID "m") (:SEMI ";") (:WS "#n      ")
+   (:ID "doStuff") (:OPEN "(") (:STRING "\"nonsense\"")))
 
 

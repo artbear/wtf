@@ -6,6 +6,7 @@
 (ql:quickload "dso-util")
 
 (load "wtf.asd")
+
 (asdf:oos 'asdf:compile-op :wtf-asdf)
 (asdf:oos 'asdf:load-op :wtf-asdf)
 

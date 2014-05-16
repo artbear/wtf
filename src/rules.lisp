@@ -4,7 +4,6 @@
   "Список загруженных пользовательских правил")
 
 
-
 (defgeneric apply-rules (rule-type  object)
   (:documentation "Метод для применени правил"))
 
@@ -41,11 +40,11 @@
 
 
 (defmethod add-rule-result (rule value  (object file-entry))
-  (let ((resulthash (gethash (rule-scope rule) (rule-result object) 'nil)))
+  (let ((resulthash (gethash (rule-scope rule) (file-entry-rule-result object) 'nil)))
     (if (null resulthash) 
         (progn
-          (setf (gethash (rule-scope rule) (rule-result object)) (make-hash-table :test 'equal))
-          (setf resulthash (gethash (rule-scope rule) (rule-result object)))))
+          (setf (gethash (rule-scope rule) (file-entry-rule-result object)) (make-hash-table :test 'equal))
+          (setf resulthash (gethash (rule-scope rule) (file-entry-rule-result object)))))
     (let ((resultlist (gethash rule resulthash)))
       (setf  (gethash rule resulthash)
              (append (list value) resultlist)))))

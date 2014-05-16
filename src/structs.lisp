@@ -18,7 +18,7 @@
   (line-number 0 :type number :read-only t))
 
 
-(defstruct (token (:include))
+(defstruct (token (:include counted))
   "Структура описывает прочитанный токен"
   (type nil :type symbol :read-only t)
   (kind nil :type symbol :read-only t)
@@ -39,3 +39,10 @@
 
 (defstruct (token-list (:include counted-owner))
   (tokens nil :read-only t))
+
+
+(defstruct file-entry
+  (filename nil :type pathname :read-only t)
+  (rule-result (make-hash-table :test 'equal) :type hash-table )
+)
+  

@@ -16,7 +16,6 @@
              (:file "macros-parser")
              (:file "function-lexer")
              (:file "rules")
-             (:file "lexer")
              (:file "lexer-rule")
              (:file "files")
              (:file "format-object")

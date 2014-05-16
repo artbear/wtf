@@ -2,11 +2,9 @@
 
 (defparameter *files-table* (make-hash-table :test 'equal))
 
-
 (defun walk-files ()
   (cl-fad:walk-directory config.wtf:*data-dir*
                          (lambda (x) (setf (gethash x *files-table*) (make-instance 'file-entry :filename x)))))
-
 
 
 (defun lexer-rules-onefile (object)
