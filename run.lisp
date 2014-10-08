@@ -4,6 +4,9 @@
 (ql:quickload "rt")
 (ql:quickload "dso-lex")
 (ql:quickload "dso-util")
+;(load "lib/dso-parse/dso-parse.asd")
+;(asdf:oos 'asdf:compile-op :dso-parse)
+;(asdf:oos 'asdf:load-op :dso-parse)
 
 (load "wtf.asd")
 

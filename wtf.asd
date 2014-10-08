@@ -1,5 +1,5 @@
 (asdf:defsystem #:wtf-asdf
-  :depends-on (#:cl-ppcre #:cl-log #:local-time )
+  :depends-on (#:cl-ppcre #:cl-log #:local-time #:yacc)
   :serial t
   :components
   ((:file "config")
@@ -19,5 +19,6 @@
              (:file "lexer-rule")
              (:file "files")
              (:file "format-object")
+             (:file "parse-yacc")
              (:file "preprocessor-parser")
              (:file "main")))))

@@ -1,7 +1,7 @@
 (in-package :wtf-test)
 
 
-(defparameter *tst-paramter* (wtf::file->list (make-instance 'wtf::file-entry :filename  "test/test-file-preprocessor.txt")))
+(defparameter *tst-paramter* (wtf::file->list  "test/test-file-preprocessor.txt"))
 
 (defparameter *tt* (wtf::parse-preprocessor *tst-paramter*))
 
@@ -12,19 +12,29 @@
 
 (deftest preprocessor/client
     (tokens->list (wtf::compile-preprocessor *tt* :client))
-  ((:IDENTIFIER "start") (:OPEN "(") (:CLOSE ")") (:SEMICOLON ";")
-               (:IDENTIFIER "end") (:OPEN "(") (:CLOSE ")") (:SEMICOLON ";"))
-    )
+  ((:VAR "var") (:ID "x") (:EXPORT "export") (:SEMI ";")
+   (:FUNCTION "function") (:ID "xx") (:OPEN "(") (:CLOSE ")")
+   (:ID "start") (:OPEN "(") (:CLOSE ")") (:SEMI ";") (:ID "end")
+   (:OPEN "(") (:CLOSE ")") (:SEMI ";")
+   (:ENDFUNCTION "endfunction")))
+
 
 (deftest preprocessor/server
     (tokens->list (wtf::compile-preprocessor *tt* :server))
-  ((:IDENTIFIER "start") (:OPEN "(") (:CLOSE ")") (:SEMICOLON ";")
-               (:IDENTIFIER "дляСервера") (:OPEN "(") (:CLOSE ")")
-               (:SEMICOLON ";") (:IDENTIFIER "end") (:OPEN "(") (:CLOSE ")")
-   (:SEMICOLON ";")))
+  ((:VAR "var") (:ID "x") (:EXPORT "export") (:SEMI ";")
+   (:FUNCTION "function") (:ID "xx") (:OPEN "(") (:CLOSE ")")
+   (:ID "start") (:OPEN "(") (:CLOSE ")") (:SEMI ";")
+   (:ID "дляСервера") (:OPEN "(") (:CLOSE ")") (:SEMI ";")
+   (:ID "end") (:OPEN "(") (:CLOSE ")") (:SEMI ";")
+   (:ENDFUNCTION "endfunction")))
+  
+
 
 (deftest preprocessor/externalconection
     (tokens->list (wtf::compile-preprocessor *tt* :externalconection))
-  ((:IDENTIFIER "start") (:OPEN "(") (:CLOSE ")") (:SEMICOLON ";")
-               (:IDENTIFIER "end") (:OPEN "(") (:CLOSE ")") (:SEMICOLON ";"))
-    )
+  ((:VAR "var") (:ID "x") (:EXPORT "export") (:SEMI ";")
+   (:FUNCTION "function") (:ID "xx") (:OPEN "(") (:CLOSE ")")
+   (:ID "start") (:OPEN "(") (:CLOSE ")") (:SEMI ";") (:ID "end")
+   (:OPEN "(") (:CLOSE ")") (:SEMI ";")
+   (:ENDFUNCTION "endfunction")))
+

@@ -43,6 +43,6 @@
 
 (defstruct file-entry
   (filename nil :type pathname :read-only t)
-  (rule-result (make-hash-table :test 'equal) :type hash-table )
-)
+  (token-list nil)
+  (rule-result (make-hash-table :test 'equal) :type hash-table ))
   

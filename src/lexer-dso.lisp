@@ -82,6 +82,7 @@
 (defun read-file-into-string (pathname)
   (with-open-file (file-stream pathname)
     (let ((*print-pretty* nil))
+      (read-char file-stream)
       (with-output-to-string (datum)
         (let ((buffer (make-array 4096 :element-type 'character)))
 	  (loop

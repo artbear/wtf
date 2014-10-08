@@ -1,2 +1,4 @@
 (defpackage :wtf
- (:use :cl :cl-log :cl-ppcre :yacc :dso-lex))
+  (:use :cl :cl-log :cl-ppcre
+        :dso-lex ))
+

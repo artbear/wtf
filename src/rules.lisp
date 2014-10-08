@@ -52,19 +52,6 @@
 
 
 
-(defmethod apply-rules ((rule-type (eql 'token))  object)
-  "Применим вызов правила ко всему списку"
-  (loop for value in (slot-value object 'token-list)
-     do 
-       (let ((rules-hash (gethash rule-type *rule-table*)))
-         (let ((used-rules (gethash (token-type value) rules-hash)))
-           (loop for rule in used-rules
-              do (if (apply (rule-fn rule) (list (token-text value) (token-type value) (token-start-point value) (token-end-point value) object))
-                     (add-rule-result rule value object)))))))
-
-
-
-
 (defmacro do-vector (var-seq &body body)
   (destructuring-bind (var user-index seq) var-seq
     (let ((vector (gensym "VECTOR"))
@@ -77,13 +64,17 @@
 
 (defmethod apply-rules ((rule-type (eql 'lexer))  object)
   "Применим вызов правила лексера"
-  (let ((vector (apply #'vector (slot-value object 'token-list)))
+  (let ((vector (apply #'vector (file-entry-token-list object)))
         (rules-hash (gethash rule-type *rule-table*)))
     (do-vector (value index vector)
       (let ((used-rules (gethash (token-type value) rules-hash)))
         (loop for rule in used-rules
-           do (if (apply (rule-fn rule) (list (token-text value) (token-type value) (token-start-point value) (token-end-point value) object index vector))
-                  (add-rule-result rule value object)))))))
+           do
+             (if (apply (rule-fn rule)
+                        (list (token-text value) (token-type value) (token-start-point value) (token-end-point value) object index vector))
+                 (progn
+                   (format t "~%run at ~a ~a " (token-text value) (token-type value))
+             (add-rule-result rule value object))))))))
 
 
 (defun find-in-vector (index data skip  inc-value)

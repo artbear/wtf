@@ -3,19 +3,15 @@
 (defparameter *files-table* (make-hash-table :test 'equal))
 
 (defun walk-files ()
+  (setf *files-table* (make-hash-table :test 'equal))
   (cl-fad:walk-directory config.wtf:*data-dir*
-                         (lambda (x) (setf (gethash x *files-table*) (make-instance 'file-entry :filename x)))))
-
+                         (lambda (x) (setf (gethash x *files-table*) (make-file-entry :filename x)))))
 
 (defun lexer-rules-onefile (object)
-  (format t "~% Проерям файл ~a" (slot-value object 'filename))
-  (setf *current-file* object)
-  (setf (slot-value object 'token-list) (file->list object))
-  (apply-rules 'token object)
-  (apply-rules 'lexer object)
-  )
+  (format t "~% Проерям файл ~a" (file-entry-filename object))
+  (setf (file-entry-token-list object ) (file->list (file-entry-filename object)))
+  (apply-rules 'lexer object))
 
-  
 (defun lexer-rules ()
   (load-rule config.wtf:*rule-dir*)
   (loop for key being the hash-keys of *files-table*

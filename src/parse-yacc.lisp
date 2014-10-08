@@ -1,30 +1,12 @@
+;;;; parse-javascript-yacc.lisp
+;;;
+;;; Use the cl-yacc package to parse javascript source text.
+;;;
+;;; Copyright (c) 2005 Greg Smolyn
+;;; See LICENSE for full licensing details.
+;;;
 (in-package :wtf)
 
-(defun prefix-p (string prefix)
-  "return:  whether prefix is a prefix of the string."
-  (and (<= (length prefix) (length string))
-       (string= string prefix :end1 (length prefix))))
-
-
-(defun maptree (fn tree)
-  "MAPTREE maps a function over a tree of cons cells.
-   If TREE is NIL, returns NIL.
-   If TREE is a cons cell, recursively calls MAPTREE on the CAR and CDR and returns a new cons cell
-   whose CAR and CDR are the results.
-   Otherwise, returns the result of applying FN to TREE."
-  (cond
-    ((consp tree)
-     (cons (maptree fn (car tree))
-           (maptree fn (cdr tree))))
-    ((null tree)
-     tree)
-    (t
-     (funcall fn tree))))
-
-
-
-
-(defparameter *muffle-conflicts* t)
 (defun expand-hashtable-to-values (hashtable)
   "Returns a list of all the values stored in a hashtable."
   (let ((valuelist '()))
@@ -36,23 +18,23 @@
 
 ; need to collect productions 
 
-;(defmacro defparser (parser-name starting-production &body productions)
-;  "This macro emulates the Lispworks parsergenerator's defparser macro, but instead creates output
-;   for CL-YACC"
-;  (let* ((starting-point (first starting-production))
-;         (starting-symbol (first starting-point))
-;         (header `(yacc:define-parser ,parser-name
-;                   (:muffle-conflicts t)
-;;		   (:print-derives-epsilon t)
-;;		   (:print-first-terminals t)
-;;		   (:print-states t)
-;;		   (:print-goto-graph t)
-;;		   (:print-lookaheads )
-;                   (:start-symbol ,starting-symbol)
-;                   (:terminals   ,(expand-hashtable-to-values *tokens-to-symbols* ) )
-;                   (:precedence nil)
-;                   ,starting-point)))
-;    (append header (generate-productions productions))))
+(defmacro defparser (parser-name starting-production &body productions)
+  "This macro emulates the Lispworks parsergenerator's defparser macro, but instead creates output
+   for CL-YACC"
+  (let* ((starting-point (first starting-production))
+         (starting-symbol (first starting-point))
+         (header `(yacc:define-parser ,parser-name
+                   (:muffle-conflicts t) ;;,js-parser-system::*muffle-conflicts*)
+;		   (:print-derives-epsilon t)
+;		   (:print-first-terminals t)
+;		   (:print-states t)
+;		   (:print-goto-graph t)
+;		   (:print-lookaheads )
+                   (:start-symbol ,starting-symbol)
+                   (:terminals ,(expand-hashtable-to-values *tokens-to-symbols* ))
+                   (:precedence nil)
+                   ,starting-point)))
+    (append header (generate-productions productions))))
 
 ; here we turn
 ;  ((primary-expression object-literal) $1)
@@ -103,5 +85,3 @@
         (t
          leaf)))
     leaf))
-
-

@@ -1,6 +1,6 @@
-(defrule :where 'token
+(defrule :where 'lexer
   :name 'check-id-length
   :token ':identifier
   :description "Длинна переменной меньше 2 символов"
-  :check #'(lambda (text type start end file) 
+  :check #'(lambda (text type start end file index data)
          (> 2 (length text ))))

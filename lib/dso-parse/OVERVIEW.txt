@@ -1,0 +1,137 @@
+This package implements a PEG (parsing-expression grammar)
+parser-generator.  PEGs are similar on the surface to CFGs, but avoid
+problems with ambiguity, &c.  The syntax used is very similar to
+normal PEG syntax in a prefix style.
+
+
+Bases
+
+Characters and strings form the most basic base of any PE
+(parsing-expression).  They match themselves at the beginning of the
+input:
+
+  (if-matches "foobar" "foo" (next match))  ==>  T
+  (if-matches "foobar" "bar" (next match))  ==>  NIL
+  (if-matches "foobar" #\f (next match))    ==>  T
+
+Regular expressions may also be used for matching.  The CL-PPCRE
+library is used in this case.  The regex is always anchored to the
+start of input.
+
+  (if-matches "foobar" (^ "fo+") (next match))  ==>  T
+  (if-matches "foobar" (^ "bz?") (next match))  ==>  NIL
+
+When these bases are used, input is expected to be a string.  One
+other base may be used, and allows complete flexibility in both
+processing and input format.
+
+  (defun test (input)
+    (when (eq (first input) :a) (values t (rest input) :a)))
+
+  (if-matches '(:a :b) test (next match))  ==>  T
+
+The supplied function must return three values on success: T, the
+unconsumed input, and the tree that resulted from matching (this may
+be NIL).
+
+
+
+IF-MATCHES format
+
+When a match succeeds, the unconsumed input and the generated tree are
+bound to the variables specifies, and the THEN form is executed in
+this binding (the default is to evaluate to T).  On failure, the ELSE
+form is executed (the default is NIL).
+
+  (if-matches "foobar" "foo" (next match) (values next match) :fail)
+    ==>  "bar", "foo"
+
+  (if-matches "foobar" "bar" (next match) (values next match) :fail)
+    ==>  :FAIL
+
+
+
+Combinations
+
+The bases may be combined in several ways.  The first is in sequence,
+requiring each subsequent rule to match against what the previous left
+unconsumed.
+
+  (if-matches "foobar" ("foo" "ba") (next match) (values next match))
+    ==>  "r", ("foo" "ba")
+
+Next is the ordered choice.  The first rule that matches determines
+the variable bindings, and no subsequent rule is attempted.
+
+  (if-matches "foobar" (/ "foo" "f") (next match) (values next match))
+    ==>  "bar", "foo"
+
+Next come the closure and semi-closures, * (0 or more), + (1 or more),
+and ? (0 or 1).
+
+  (if-matches "foobar" (+ #\f) (next match) (values next match))
+    ==>  "oobar", (#\f)
+
+A generalized count is also provided.
+
+  (if-matches "oobar" ({} 1 3 #\o) (next match) (values next match))
+    ==>  "bar", (#\o #\o)
+
+The closures may be defined in terms of the generalized count:
+
+  (* rule)  ==  ({} nil nil rule)
+  (+ rule)  ==  ({} 1 nil rule)
+  (? rule)  ==  ({} 0 1 rule)
+
+
+
+Nesting
+
+Rules may be nested to an arbitrary depth.
+
+  (if-matches "foobar" (#\f ({} 1 3 #\o) "ba" (? #\x)) (next match)
+    (values next match))
+      ==>  "r", (#\f (#\o #\o) "ba")
+
+
+
+Greediness
+
+Matching is done in a greedy fashion.  If a rule matches the input,
+the image of its match is consumed, even if this causes some
+containing or subsequent rule to fail later on.
+
+  (if-matches "foobar" (#\f (+ #\o) "ob") (next match))  ==>  NIL
+
+
+
+Predicates
+
+To help deal with greediness, two predicates are provided.  The
+and-predicate requires its rule to match, and the not-predicate
+requires its rule to not match.  Both predicates consume no input and
+generate no tree.  The previous problem can be dealt with this way:
+
+  (if-matches "foobar" (#\f (+ (#\o (! #\b))) "ob" (next match)))
+    ==>  T
+
+
+
+Efficiency
+
+This package does *not* generate packrat parsers (no memoization is
+done).  Packratting allows parsing to execute in linear time, even
+when backtracking is necessary.  How much a benefit packratting yields
+varies based both the language and the input, but for most computer
+languages backtracking is quite minimal and so packratting isn't
+needed.
+
+The generated code nonetheless should be quite efficient, is it
+expands into mostly IF-forms, and so the compiler is free to do many
+optimizations.  In cases with static input (such as the examples), you
+may even see your compiler optimize away all calculations!
+
+If extra speed is needed, you may consider lexing your input
+beforehand.  This won't necessarily eliminate backtracking, but will
+allow matching and backtracking to proceed in larger steps.  (An
+example of this is forthcoming.)

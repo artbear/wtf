@@ -1,9 +1,9 @@
-(defrule :where 'token
+(defrule :where 'lexer
   :name 'check-keyword
   :token *keyword-symbols*
   :description "Ключевое слово не соответствует каночническому написанию"
-  :check #'(lambda (text type start end file) 
+  :check #'(lambda (text type start end file index data)
   (let ((correct-word (gethash type *correct-keywords* '())))
-       (reduce #'(lambda(x y) (or x y)) 
-               (mapcar #'(lambda(x) (equal x text)) correct-word)))))
+       (not (reduce #'(lambda(x y) (or x y)) 
+               (mapcar #'(lambda(x) (equal x text)) correct-word))))))
 
